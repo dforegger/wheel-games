@@ -13,104 +13,127 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 
-ROWS = 7
-COLUMNS = 13
-
 # This sets the width and height of each grid location
-width  = 20
+width = 20
 height = 20
 
 # This sets the margin between each cell
 margin = 5
 
-# Create a 2 dimensional array. A two dimensional
-# array is simply a list of lists.
-grid = np.zeros((ROWS, COLUMNS))
 
-# Set row 1, cell 5 to one.
-# Current position
-x_coord = random.randrange(COLUMNS)
-y_coord = random.randrange(ROWS)
-grid[y_coord][x_coord] = 1
-print grid
+class Game(object):
+    """ This class represents an instance of the game.
+    The overhead is minimal enough that if we need to reset just create a new instance of this class"""
+
+    #--- Class attributes
+    # TODO
 
 
-# Set the width and height of the screen [width,height]
-size = [COLUMNS*(width+margin)+margin, ROWS*(height+margin)+margin]
-screen = pygame.display.set_mode(size)
+    def __init__(self, rows, columns):
+        self.ROWS, self.COLUMNS = rows, columns
+        # Create a 2 dimensional array. A two dimensional
+        # array is simply a list of lists.
+        self.grid = np.zeros((rows, columns))
 
-pygame.display.set_caption("Pygame Scratch")
+        # Set row 1, cell 5 to one.
+        # Current position
+        self.x_coord = random.randrange(columns)
+        self.y_coord = random.randrange(rows)
+        self.grid[self.y_coord][self.x_coord] = 1
 
-# Loop until the user clicks the close button.
-done = False
+        self.game_over = False
+        pass
 
-# Used to manage how fast the screen updates
-clock = pygame.time.Clock()
+    def process_events(self):
+        """ Process all of the events. Return a "True" if we need
+            to close the window. """
 
-# Hide the mouse cursor
-pygame.mouse.set_visible(0)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return True
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.game_over:
+                    self.__init__()
+            elif event.type == pygame.KEYUP:
+                self.grid[self.y_coord][self.x_coord] = 0
 
-# -------- Main Program Loop -----------
-while not done:
-    # ALL EVENT PROCESSING SHOULD GO BELOW THIS COMMENT
-    for event in pygame.event.get():  # User did something
-        if event.type == pygame.QUIT:  # If user clicked close
-            done = True  # Flag that we are done so we exit this loop
-            # User pressed down on a key
+                # Figure out if it was an arrow key. If so
+                # adjust speed.
+                if event.key == pygame.K_LEFT:
+                    self.x_coord = (self.x_coord - 1) % self.COLUMNS
+                elif event.key == pygame.K_RIGHT:
+                    self.x_coord = (self.x_coord + 1) % self.COLUMNS
+                elif event.key == pygame.K_UP:
+                    self.y_coord = (self.y_coord - 1) % self.ROWS
+                elif event.key == pygame.K_DOWN:
+                    self.y_coord = (self.y_coord + 1) % self.ROWS
 
-        elif event.type == pygame.KEYUP:
-            grid[y_coord][x_coord] = 0
+                self.grid[self.y_coord][self.x_coord] = 1
 
-            # Figure out if it was an arrow key. If so
-            # adjust speed.
-            if event.key == pygame.K_LEFT:
-                x_coord = (x_coord - 1) % COLUMNS
-            elif event.key == pygame.K_RIGHT:
-                x_coord = (x_coord + 1) % COLUMNS
-            elif event.key == pygame.K_UP:
-                y_coord = (y_coord - 1) % ROWS
-            elif event.key == pygame.K_DOWN:
-                y_coord = (y_coord + 1) % ROWS
+        return False
 
-            grid[y_coord][x_coord]=1
+    def run_logic(self):
+        """
+        This method is run each time through the frame.
+        """
+        pass
 
-    # ALL EVENT PROCESSING SHOULD GO ABOVE THIS COMMENT
-
-    # ALL GAME LOGIC SHOULD GO BELOW THIS COMMENT
+    def display_frame(self, screen):
+        """ Render the game """
 
 
-    # ALL GAME LOGIC SHOULD GO ABOVE THIS COMMENT
+        if self.game_over:
+            screen.fill(WHITE)
+            pass
+        else:
+            screen.fill(BLACK)
 
-    # ALL CODE TO DRAW SHOULD GO BELOW THIS COMMENT
+            # Draw the grid
+            for row in range(self.ROWS):
+                for column in range(self.COLUMNS):
+                    pygame.draw.rect(screen,
+                                     GREEN if self.grid[row][column] == 1 else WHITE,
+                                     [(margin + width) * column + margin,
+                                      (margin + height) * row + margin,
+                                      width,
+                                      height])
 
-    # First, clear the screen to WHITE. Don't put other drawing commands
-    # above this, or they will be erased with this command.
-    screen.fill(BLACK)
-
-    # Draw the grid
-    for row in range(ROWS):
-        for column in range(COLUMNS):
-            color = WHITE
-            if grid[row][column] == 1:
-                color = GREEN
-            pygame.draw.rect(screen,
-                             color,
-                             [(margin+width)*column+margin,
-                              (margin+height)*row+margin,
-                              width,
-                              height])
-
-    # ALL CODE TO DRAW SHOULD GO ABOVE THIS COMMENT
-
-    # Go ahead and update the screen with what we've drawn.
-    pygame.display.flip()
-
-    # Limit to 20 frames per second
-    clock.tick(60)
+        pygame.display.flip()
 
 def main():
     # Setup
     pygame.init()
+
+    ROWS = 7
+    COLUMNS = 13
+
+    # Set the width and height of the screen [width,height]
+    size = [COLUMNS * (width + margin) + margin, ROWS * (height + margin) + margin]
+    screen = pygame.display.set_mode(size)
+
+    pygame.display.set_caption("Pygame Scratch")
+    pygame.mouse.set_visible(False)
+
+    # Create our objects and set the data
+    done = False
+    clock = pygame.time.Clock()
+
+    # Create an instance of the Game class
+    game = Game(rows=ROWS, columns=COLUMNS)
+
+    # Main game loop
+    while not done:
+        # Process events (keystrokes, mouse clicks, etc)
+        done = game.process_events()
+
+        # Update object positions, check for collisions
+        game.run_logic()
+
+        # Draw the current frame
+        game.display_frame(screen)
+
+        # Pause for the next frame
+        clock.tick(60)
 
     # Close the window and quit.
     # If you forget this line, the program will 'hang'
